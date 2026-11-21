@@ -45,20 +45,20 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 | `get_tag_usage` | Works | Counts come from the same reads; not cross-checked against upstream |
 | `get_headings` | **Unavailable** | Returns an explanatory message instead of an empty list |
 | `search_todos`, `search_items` | Works | `search_items` only opens Things' search; the call was accepted, not visually checked |
-| `search_advanced` | Works, partly | Tested: `status`, `tag`, `area`, `project`, `type` (to-do/project), `last`, `deadline`, `stop_date` with operators. Not tested: `start_date`. `type="heading"` is unavailable |
+| `search_advanced` | Works | Tested: `status`, `tag`, `area`, `project`, `type` (to-do/project), `last`, `deadline`, `start_date` (exact and `>=`), `stop_date` with operators. `type="heading"` is unavailable |
 | `get_recent` | Works | |
 | `add_todo` | Works | Title, notes, tags, `when`, deadline tested. Checklist items are sent but can't be read back here |
 | `add_project` | Works | With initial to-dos and `when: someday` |
 | `add_area`, `update_area` | Works | Rename and tags tested. Areas can't be deleted through this server (by design), so a test run leaves one behind |
 | `update_todo` | Works | Title, notes, `add_tags`, `tags`, deadline, moving into a project, append/clear checklist, completed, canceled. Needs `THINGS_AUTH_TOKEN` |
 | `update_project` | Works | Title, notes, deadline, canceled. Needs `THINGS_AUTH_TOKEN` |
-| `bulk_update_todos` | Works, partly | Tested: `add_tags`, deadline, completed, canceled. Not tested: `list`, `when`, `heading`. Needs `THINGS_AUTH_TOKEN` |
+| `bulk_update_todos` | Works | Tested: `add_tags`, `tags`, deadline, `when` (a date), `list`, `list_id`, completed, canceled. `heading`: the move into the project works, but which heading the to-do lands under can't be read back, so that part was checked by eye only. Not tested: `when` keywords (`today`, `evening`, ...). Needs `THINGS_AUTH_TOKEN` |
 | `show_item` | Works | Navigates Things; accepted, not visually checked |
 
 ### Known limitations
 
 - **Unavailable fields.** Headings, checklist items, reminder times and repeating-item details can't be read. Reading a project's to-dos works, but you lose which heading each one sits under. Only the SQLite backend has them.
-- **Write confirmations are optimistic.** "Updated todo" means Things accepted the URL. Things applies it a moment later, so a read in the same instant can lag. The server clears its read caches after each write.
+- **Write confirmations are optimistic.** "Updated todo" means Things accepted the URL. Things applies it a moment later, so a read issued at the same instant (for example, in parallel with the write) can still show the old data; a read a second later is correct. The server clears its read caches after each write.
 - **Auth token.** Updating existing items needs the token from Things → Settings → General → Things URLs → Manage, set as `THINGS_AUTH_TOKEN`. Without it, update tools fail with instructions. Adding items doesn't need it.
 - **Approximate `start` values.** Items from the Upcoming list are labeled `Someday` (how things.py represents scheduled items), since Things doesn't expose the start list.
 - **Speed.** Each Apple Event query costs a process start. There's a short cache and bulk reads, but big views are slower than upstream.

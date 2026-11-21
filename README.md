@@ -52,7 +52,7 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 | `add_area`, `update_area` | Works | Rename and tags tested. Areas can't be deleted through this server (by design), so a test run leaves one behind |
 | `update_todo` | Works | Title, notes, `add_tags`, `tags`, deadline, moving into a project, append/clear checklist, completed, canceled. Needs `THINGS_AUTH_TOKEN` |
 | `update_project` | Works | Title, notes, deadline, canceled. Needs `THINGS_AUTH_TOKEN` |
-| `bulk_update_todos` | Works | Tested: `add_tags`, `tags`, deadline, `when` (a date), `list`, `list_id`, completed, canceled. `heading`: the move into the project works, but which heading the to-do lands under can't be read back, so that part was checked by eye only. Not tested: `when` keywords (`today`, `evening`, ...). Needs `THINGS_AUTH_TOKEN` |
+| `bulk_update_todos` | Works | Tested: `add_tags`, `tags`, deadline, `when` (a date), `list`, `list_id`, completed, canceled. `heading`: works (the to-do landed under the right heading, confirmed by eye in Things, since this backend can't read headings back). Not tested: `when` keywords (`today`, `evening`, ...). Needs `THINGS_AUTH_TOKEN` |
 | `show_item` | Works | Navigates Things; accepted, not visually checked |
 
 ### Known limitations

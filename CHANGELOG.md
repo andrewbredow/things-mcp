@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+- **AppleScript Read Backend by Default**: Reads now go through the Things app (Apple Events) instead of opening its database, which fixes `unable to open database file` on macOS 27 when launched from Claude Desktop ([#62][i62]). The old behavior is still available with `THINGS_MCP_BACKEND=sqlite`. Things' scripting interface doesn't expose headings, checklist items, reminder times or repeating-item details, so those are missing by default; `get_headings` and `search_advanced(type="heading")` return an explanatory message.
+- **Auth Token Is Now Explicit**: The token used to be read from the database. With the default backend, set `THINGS_AUTH_TOKEN` (or the "Things auth token" extension setting) to update existing items. Without it, update tools now fail with instructions instead of sending a request Things would reject.
+
+### Bug fixes
+
+- **Someday Filtering**: Project `start` is now derived from membership in the Someday list.
+
+[i62]: https://github.com/hald/things-mcp/issues/62
+
 ## v0.8.2 - 2026-10-25
 
 ### Bug fixes

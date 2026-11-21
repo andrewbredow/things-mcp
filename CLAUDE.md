@@ -57,19 +57,27 @@ This is a Model Context Protocol (MCP) server that bridges Claude Desktop with t
    - Implements Someday project filtering to match Things UI behavior
    - **Pagination + structured responses**: the 16 list/search read tools accept optional `limit`/`offset` and return a FastMCP `ToolResult` carrying both a human-readable text channel and a `structured_content` envelope `{items, count, total, offset, limit}`. Two helpers drive this: `_paginate_format` (text) and `_paginate_result` (wraps text + JSON-safe structured data); `_error_result` wraps early-return/validation errors. `get_tag_usage` intentionally stays a plain string.
 
-2. **src/things_mcp/url_scheme.py** - Things URL scheme + AppleScript implementation
+2. **src/things_mcp/reader.py / as_reader.py** - Read backend selection
+   - `reader.py` exports `things`: the AppleScript backend (default) or things.py (`THINGS_MCP_BACKEND=sqlite`). server/formatters/url_scheme import it instead of `import things`
+   - `as_reader.py` mimics the things.py calls the server uses (inbox, today, tasks, todos, get, search, last, token...) over bulk JXA reads via `osascript -l JavaScript`; filtering happens in Python
+   - Why: on macOS 27 the DB is TCC-protected and unreadable from servers launched via Claude Desktop's disclaimer helper (#62)
+   - Not exposed by Things' scripting dictionary: headings, checklist items, reminder times, repeat info. `SUPPORTS_STRUCTURE` gates the heading tools. The auth token comes from `THINGS_AUTH_TOKEN`, not the DB
+
+3. **src/things_mcp/url_scheme.py** - Things URL scheme + AppleScript implementation
    - Constructs Things URLs for various operations
    - Uses shell script with `open -g` to execute URLs without bringing Things to foreground
    - Handles authentication tokens for update operations
    - `add_area`/`update_area` use AppleScript (`osascript`) since the Things URL scheme has no area commands; all user-supplied strings are escaped (`\` then `"`) before being embedded in the AppleScript string literal to prevent injection, and `osascript` is invoked with an argv list (no shell)
 
-3. **src/things_mcp/formatters.py** - Data formatting utilities
+4. **src/things_mcp/formatters.py** - Data formatting utilities
    - Converts Things database objects to human-readable text
    - Handles nested data (projects within areas, checklist items, etc.)
 
-4. **tests/** - Unit test suite (192 tests)
+5. **tests/** - Unit test suite (218 tests)
    - **conftest.py** - Pytest fixtures and mock data
    - **_helpers.py** - `tool_text()` reads the text channel from a `ToolResult` (or a plain-string result) so text assertions work across both return shapes
+   - **conftest.py** pins `THINGS_MCP_BACKEND=sqlite` because the server tests mock things.py
+   - **test_as_reader.py** - AppleScript backend (osascript mocked); **test_backend_selection.py** - backend-dependent server behavior
    - **test_url_scheme.py** - Tests for URL construction
    - **test_formatters.py** - Tests for data formatting
    - **test_things_server.py** - Tests for server tools (incl. pagination + structured-content shape)
@@ -79,7 +87,7 @@ This is a Model Context Protocol (MCP) server that bridges Claude Desktop with t
 
 ## Key Implementation Details
 
-- Uses things.py library for reading Things SQLite database
+- Reads default to Apple Events (no filesystem access); things.py/SQLite is opt-in via `THINGS_MCP_BACKEND=sqlite`
 - Write operations use the Things URL scheme API, except Area create/update which use AppleScript (`osascript`)
 - FastMCP (3.x) provides the MCP protocol implementation
 - Read tools return a `ToolResult` (human-readable text + `structured_content`); write/report tools and error paths return plain strings

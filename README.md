@@ -230,12 +230,34 @@ Applies the same change to every todo in `ids` in a single operation. Requires t
   - Date: `YYYY-MM-DD` (e.g., `2024-01-15`)
   - DateTime with reminder: `YYYY-MM-DD@HH:MM` (e.g., `2024-01-15@14:30`)
 
+## Read Backends
+
+Reads go through one of two backends, chosen with `THINGS_MCP_BACKEND`:
+
+| Backend | How it reads | Needs |
+|---------|--------------|-------|
+| `applescript` (default) | Apple Events to the running Things app | Things installed; macOS may ask once to let the server control Things |
+| `sqlite` | Opens the Things database directly via [things.py](https://github.com/thingsapi/things.py) | The server process must be allowed to read Things' data in `~/Library/Group Containers/` |
+
+The default works on macOS 27, where apps that launch MCP servers through a "disclaimer" helper (Claude Desktop) no longer pass their file access on to the server, so direct database reads fail with `unable to open database file` ([#62](https://github.com/hald/things-mcp/issues/62)).
+
+**What the AppleScript backend can't read.** Things' scripting interface doesn't expose these, so they are missing in that mode:
+
+- Headings (`get_headings` and `search_advanced(type="heading")` say so rather than returning an empty list)
+- Checklist items on to-dos
+- Reminder times and repeating-item details
+
+Everything else (lists, projects, areas, tags, search, logbook, notes, dates) works the same. Set `THINGS_MCP_BACKEND=sqlite` if you need the missing fields and your setup can read the database.
+
+**Auth token.** Updating existing items (`update_todo`, `update_project`, `bulk_update_todos`) needs the Things auth token. With the AppleScript backend the server can't read it from the database, so set `THINGS_AUTH_TOKEN` (Things → Settings → General → Things URLs → Manage). In the Claude Desktop extension, use the "Things auth token" setting. Adding items doesn't need it.
+
 ## Troubleshooting
 
 If it's not working:
 
 1. **Make sure Things 3 is installed and has been opened at least once**
-   - The Things database needs to exist for the server to work
+   - The first read may show a macOS prompt asking to let the server control Things; allow it
+   - `unable to open database file` means you're on the `sqlite` backend without database access; remove `THINGS_MCP_BACKEND` to use the default
 
 2. **Check that "Enable Things URLs" is turned on**
    - Open Things → Settings → General → Enable Things URLs
@@ -311,6 +333,8 @@ Set these environment variables to enable HTTP transport:
 | `THINGS_MCP_TRANSPORT` | `stdio` | Transport type: `stdio` or `http` |
 | `THINGS_MCP_HOST` | `127.0.0.1` | HTTP server bind address |
 | `THINGS_MCP_PORT` | `8000` | HTTP server port |
+| `THINGS_MCP_BACKEND` | `applescript` | Read backend: `applescript` or `sqlite` (see [Read Backends](#read-backends)) |
+| `THINGS_AUTH_TOKEN` | unset | Things auth token, needed to update existing items on the `applescript` backend |
 
 #### Example
 

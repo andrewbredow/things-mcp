@@ -17,7 +17,10 @@
       "command": "uvx",
       "args": [
         "things-mcp"
-      ]
+      ],
+      "env": {
+        "THINGS_AUTH_TOKEN": "${user_config.auth_token}"
+      }
     }
   },
   "tools": [
@@ -140,5 +143,14 @@
     "platforms": [
       "darwin"
     ]
+  },
+  "user_config": {
+    "auth_token": {
+      "type": "string",
+      "title": "Things auth token",
+      "description": "Optional. Needed only to update existing items. Copy it from Things > Settings > General > Things URLs > Manage.",
+      "sensitive": true,
+      "required": false
+    }
   }
 }

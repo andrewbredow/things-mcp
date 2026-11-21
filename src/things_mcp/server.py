@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
-import things
+from .reader import things, SUPPORTS_STRUCTURE
 from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
 from .formatters import format_todo, format_project, format_area, format_tag, format_heading
@@ -110,6 +110,14 @@ def filter_someday_project_tasks(todos):
 
 
 # Pagination helpers
+_STRUCTURE_UNAVAILABLE = (
+    "{what} are not available with the AppleScript read backend: Things' scripting "
+    "interface does not expose headings, checklist items or reminder times. Set "
+    "THINGS_MCP_BACKEND=sqlite to read them directly from the Things database "
+    "(requires the server process to have access to Things' data)."
+)
+
+
 def _validate_pagination(limit, offset):
     """Return an error string if limit/offset are invalid, else None."""
     if limit is not None and limit <= 0:
@@ -501,6 +509,8 @@ async def get_headings(project_uuid: str = None, limit: int = None, offset: int 
     err = _validate_pagination(limit, offset)
     if err:
         return _error_result(err)
+    if not SUPPORTS_STRUCTURE:
+        return _error_result(_STRUCTURE_UNAVAILABLE.format(what="Headings"))
     if project_uuid:
         project = things.get(project_uuid)
         if not project or project.get('type') != 'project':
@@ -560,6 +570,8 @@ async def search_advanced(
     err = _validate_pagination(limit, offset)
     if err:
         return _error_result(err)
+    if type == "heading" and not SUPPORTS_STRUCTURE:
+        return _error_result(_STRUCTURE_UNAVAILABLE.format(what="Headings"))
     search_params = {}
     if status:
         search_params["status"] = status
@@ -866,10 +878,7 @@ async def bulk_update_todos(
 
     token = things.token()
     if not token:
-        return (
-            "THINGS_AUTH_TOKEN not configured. Bulk updates require it. "
-            "Enable in Things → Settings → General → Manage."
-        )
+        return url_scheme.TOKEN_HELP
 
     payload = [
         {"type": "to-do", "operation": "update", "id": uid, "attributes": attributes}
@@ -951,6 +960,8 @@ async def search_items(query: str) -> str:
 
 def main():
     """Main entry point for the Things MCP server."""
+    from .reader import BACKEND
+    logger.info("Things read backend: %s", BACKEND)
     if TRANSPORT == "http":
         mcp.run(transport="http", host=HTTP_HOST, port=HTTP_PORT)
     else:

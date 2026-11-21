@@ -1,7 +1,7 @@
 import json as _json
 import urllib.parse
 import subprocess
-import things
+from .reader import things
 from typing import Optional, Dict, Any, List, Union
 
 # When parameter accepted values:
@@ -29,6 +29,13 @@ def format_when_with_reminder(date: str, time: str) -> str:
     """
     return f"{date}@{time}"
 
+def _invalidate_reads() -> None:
+    """Writes make the read backend's short-lived caches stale (the SQLite backend has none)."""
+    invalidate = getattr(things, "invalidate", None)
+    if invalidate:
+        invalidate()
+
+
 def execute_url(url: str) -> None:
     """Execute a Things URL without bringing Things to the foreground."""
     try:
@@ -40,6 +47,8 @@ def execute_url(url: str) -> None:
     except subprocess.CalledProcessError:
         # Fallback - still try with open -g directly
         subprocess.run(['open', '-g', url], check=True)
+    finally:
+        _invalidate_reads()
 
 
 def add_area(title: str) -> str:
@@ -59,6 +68,7 @@ def add_area(title: str) -> str:
         ['osascript', '-e', applescript],
         check=True, capture_output=True, text=True
     )
+    _invalidate_reads()
     return result.stdout.strip()
 
 
@@ -101,6 +111,19 @@ def update_area(area_id: str, title: Optional[str] = None,
         ['osascript', '-e', applescript],
         check=True, capture_output=True, text=True
     )
+    _invalidate_reads()
+
+
+TOKEN_HELP = (
+    "THINGS_AUTH_TOKEN is not set. Updating existing items needs the Things auth token: "
+    "copy it from Things > Settings > General > Things URLs > Manage and set it as the "
+    "THINGS_AUTH_TOKEN environment variable (or the 'Things auth token' field in the "
+    "Claude Desktop extension settings). Adding items does not need it."
+)
+
+
+class MissingAuthToken(RuntimeError):
+    pass
 
 
 def construct_url(command: str, params: Dict[str, Any]) -> str:
@@ -111,8 +134,9 @@ def construct_url(command: str, params: Dict[str, Any]) -> str:
     # Get authentication token if needed
     if command in ['update', 'update-project']:
         token = things.token()
-        if token:
-            params['auth-token'] = token
+        if not token:
+            raise MissingAuthToken(TOKEN_HELP)
+        params['auth-token'] = token
 
     # URL encode parameters
     if params:

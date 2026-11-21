@@ -1,3 +1,9 @@
+import os
+
+# The server tests mock things.py, so exercise the SQLite shim. The AppleScript
+# backend (the production default) is covered by test_as_reader.py.
+os.environ["THINGS_MCP_BACKEND"] = "sqlite"
+
 import pytest
 from unittest.mock import Mock, patch
 

@@ -10,6 +10,9 @@
 ### Bug fixes
 
 - **Someday Filtering**: Project `start` is now derived from membership in the Someday list.
+- **Project Types in Lists**: With the AppleScript backend, projects that Things returns inside a list (e.g. a Someday project) are typed `project` rather than `to-do`.
+- **Someday Project Children**: With the AppleScript backend, `get_someday` now includes the open to-dos inside Someday projects, which Things hides from its own Anytime list.
+- **Stale Reads After Writes**: The AppleScript backend's short-lived read caches are cleared after every write.
 
 [i62]: https://github.com/hald/things-mcp/issues/62
 

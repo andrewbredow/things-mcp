@@ -72,8 +72,9 @@ class TestLists:
         osa = fake_osa({("list", "Inbox"): [_item("a")]})
         with patch.object(as_reader, "_osa", osa):
             as_reader.inbox()[0]["title"] = "mutated"
+            before = len(osa.calls)
             assert as_reader.inbox()[0]["title"] == "t"
-        assert len(osa.calls) == 1  # second call served from cache
+        assert len(osa.calls) == before  # second call served from cache
 
 
 class TestProjectsAndGet:
@@ -196,9 +197,10 @@ class TestInvalidation:
         with patch.object(as_reader, "_osa", osa):
             as_reader.inbox()
             as_reader._CACHE["x"] = (0, {})
+            before = len(osa.calls)
             as_reader.invalidate()
             as_reader.inbox()
-        assert len(osa.calls) == 2 and not as_reader._CACHE
+        assert len(osa.calls) > before and not as_reader._CACHE
 
     def test_url_write_invalidates_reads(self):
         from things_mcp import url_scheme
@@ -208,3 +210,24 @@ class TestInvalidation:
             with patch("subprocess.run"), patch.object(url_scheme.things, "invalidate", as_reader.invalidate, create=True):
                 url_scheme.execute_url("things:///add?title=x")
             assert not as_reader._QUERY_CACHE
+
+
+class TestListTypesAndSomedayChildren:
+    def _data(self):
+        return {
+            ("list", "Someday"): [_item("p1", title="Someday proj"), _item("t9", title="loose todo")],
+            ("projects", None): [_item("p1", type="project")],
+            ("list", "Anytime"): [_item("t1")],
+            ("project_todos", "p1"): [_item("c1", project="p1"), _item("c2", project="p1", status="completed")],
+        }
+
+    def test_projects_in_lists_are_typed_project(self):
+        with patch.object(as_reader, "_osa", fake_osa(self._data())):
+            by_id = {i["uuid"]: i["type"] for i in as_reader.someday()}
+        assert by_id == {"p1": "project", "t9": "to-do"}
+
+    def test_anytime_includes_open_children_of_someday_projects(self):
+        with patch.object(as_reader, "_osa", fake_osa(self._data())):
+            items = as_reader.anytime()
+        assert {i["uuid"] for i in items} == {"t1", "c1"}  # completed child excluded
+        assert next(i for i in items if i["uuid"] == "c1")["start"] == "Anytime"

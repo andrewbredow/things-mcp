@@ -124,14 +124,25 @@ def invalidate():
 
 
 def _list(name, start):
+    """Items of a built-in list. Things returns projects among a list's to-dos
+    (e.g. a Someday project), so tag them by membership in the project set."""
     items = _query(kind="list", name=name)
+    project_ids = {p["uuid"] for p in _query(kind="projects")}
     for i in items:
         i["start"] = start
+        if i["uuid"] in project_ids:
+            i["type"] = "project"
     return items
 
 
 def _someday_ids():
+    """UUIDs in the Someday list (projects and to-dos; callers intersect as needed)."""
     return {i["uuid"] for i in _query(kind="list", name="Someday")}
+
+
+def _someday_project_ids():
+    projects = {p["uuid"] for p in _query(kind="projects")}
+    return _someday_ids() & projects
 
 
 def _projects():
@@ -157,7 +168,19 @@ def upcoming(include_items=False):
 
 
 def anytime(include_items=False):
-    return _list("Anytime", "Anytime")
+    """Anytime list, plus open to-dos inside Someday projects.
+
+    Things hides those from its Anytime list, but things.py's anytime() returns
+    them and the server relies on that to build get_someday (it filters them out
+    of get_anytime/get_today itself)."""
+    items = _list("Anytime", "Anytime")
+    seen = {i["uuid"] for i in items}
+    for proj in _someday_project_ids():
+        for t in _query(kind="project_todos", id=proj):
+            if t["status"] == "open" and t["uuid"] not in seen:
+                t["start"] = "Anytime"
+                items.append(t)
+    return items
 
 
 def someday(include_items=False):

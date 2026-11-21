@@ -66,7 +66,7 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 ### What was and wasn't verified
 
 - **Verified:** every tool above through a real MCP server run the way Claude Desktop runs it, with the SQLite backend failing and this backend succeeding in the same setup. 222 unit tests pass (the AppleScript backend's are mocked).
-- **Not verified:** a side-by-side comparison with upstream's results. On the test machine the upstream backend can't read the database at all, even from Terminal, so parity rests on matching Things' own counts and spot checks. Also untested: a clean machine's first-run Automation prompt, other macOS versions, other Things versions, and the `.mcpb` extension build. Every tool and every documented parameter was exercised at least once, apart from those listed here.
+- **Not verified:** a side-by-side comparison with upstream's results. On the test machine the upstream backend can't read the database at all, even from Terminal, so parity rests on matching Things' own counts and spot checks. Also untested: a clean machine's first-run Automation prompt, other macOS versions, other Things versions, and the `.mcpb` extension build. Every tool was exercised at least once, but not every parameter combination (for example `add_todo` with `list_title` or `heading`, and `update_todo` with `when`, were not tried).
 
 ### Try it
 

@@ -38,13 +38,13 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 | `get_someday` | Works | Includes Someday projects and the open to-dos inside them |
 | `get_upcoming` | Works, differs | Includes repeating-item templates, shown with a `4001-01-01` deadline and no start date. Not compared with upstream |
 | `get_logbook` | Works | Period, limit and `project_uuid` filters tested |
-| `get_trash` | Works | Large trashes are slow (several seconds); not timed |
+| `get_trash` | Works | 3,907 trashed items read in about 2.5s |
 | `get_todos` | Works, differs | `include_items` has no effect: checklists are unavailable |
 | `get_projects`, `get_areas`, `get_tags` | Works | |
 | `get_tagged_items` | Works | Open items only, as designed |
 | `get_tag_usage` | Works | Counts come from the same reads; not cross-checked against upstream |
 | `get_headings` | **Unavailable** | Returns an explanatory message instead of an empty list |
-| `search_todos`, `search_items` | Works | `search_items` only opens Things' search; the call was accepted, not visually checked |
+| `search_todos`, `search_items` | Works | `search_items` opens Things' Search screen (confirmed by reading Things' current list); the query text itself isn't exposed to check |
 | `search_advanced` | Works | Tested: `status`, `tag`, `area`, `project`, `type` (to-do/project), `last`, `deadline`, `start_date` (exact and `>=`), `stop_date` with operators. `type="heading"` is unavailable |
 | `get_recent` | Works | |
 | `add_todo` | Works | Title, notes, tags, `when`, deadline tested. Checklist items are sent but can't be read back here |
@@ -52,8 +52,8 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 | `add_area`, `update_area` | Works | Rename and tags tested. Areas can't be deleted through this server (by design), so a test run leaves one behind |
 | `update_todo` | Works | Title, notes, `add_tags`, `tags`, deadline, moving into a project, append/clear checklist, completed, canceled. Needs `THINGS_AUTH_TOKEN` |
 | `update_project` | Works | Title, notes, deadline, canceled. Needs `THINGS_AUTH_TOKEN` |
-| `bulk_update_todos` | Works | Tested: `add_tags`, `tags`, deadline, `when` (a date), `list`, `list_id`, completed, canceled. `heading`: works (the to-do landed under the right heading, confirmed by eye in Things, since this backend can't read headings back). Not tested: `when` keywords (`today`, `evening`, ...). Needs `THINGS_AUTH_TOKEN` |
-| `show_item` | Works | Navigates Things; accepted, not visually checked |
+| `bulk_update_todos` | Works | Tested: `add_tags`, `tags`, deadline, `when` (a date, `today`, `tomorrow`, `evening`, `someday`, `anytime`), `list`, `list_id`, completed, canceled. `heading`: works (the to-do landed under the right heading, confirmed by eye in Things, since this backend can't read headings back). `evening` shows up as a Today item; Things doesn't expose the evening flag, so that one can't be told apart from `today` by reads. Needs `THINGS_AUTH_TOKEN` |
+| `show_item` | Works | Confirmed by reading which list Things reports as current: a built-in list (`logbook`) and a project by ID both navigated correctly |
 
 ### Known limitations
 
@@ -66,7 +66,7 @@ Tested through a live MCP server launched the way Claude Desktop launches it, ag
 ### What was and wasn't verified
 
 - **Verified:** every tool above through a real MCP server run the way Claude Desktop runs it, with the SQLite backend failing and this backend succeeding in the same setup. 222 unit tests pass (the AppleScript backend's are mocked).
-- **Not verified:** a side-by-side comparison with upstream's results. On the test machine the upstream backend can't read the database at all, even from Terminal, so parity rests on matching Things' own counts and spot checks. Also untested: a clean machine's first-run Automation prompt, other macOS versions, other Things versions, and the `.mcpb` extension build.
+- **Not verified:** a side-by-side comparison with upstream's results. On the test machine the upstream backend can't read the database at all, even from Terminal, so parity rests on matching Things' own counts and spot checks. Also untested: a clean machine's first-run Automation prompt, other macOS versions, other Things versions, and the `.mcpb` extension build. Every tool and every documented parameter was exercised at least once, apart from those listed here.
 
 ### Try it
 
